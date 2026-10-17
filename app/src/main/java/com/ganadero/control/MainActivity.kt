@@ -23,27 +23,29 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import com.ganadero.control.data.Repo
-import com.ganadero.control.ui.AnimalesScreen
-import com.ganadero.control.ui.DashboardScreen
-import com.ganadero.control.ui.FinanzasScreen
-import com.ganadero.control.ui.ProduccionScreen
-import com.ganadero.control.ui.VacunasScreen
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.ganadero.control.ui.navigation.GanaderoNavGraph
+import com.ganadero.control.ui.navigation.Screen
 import com.ganadero.control.ui.theme.GanaderoTheme
 import com.ganadero.control.ui.theme.Orange
 import com.ganadero.control.ui.theme.OrangePale
+import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * INYECCIÓN DE DEPENDENCIAS (HILT):
+ * Actividad principal anotada con @AndroidEntryPoint para habilitar la inyección de dependencias
+ * en componentes de la interfaz de usuario.
+ */
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Repo.init(applicationContext)
         setContent {
             GanaderoTheme {
                 AppRoot()
@@ -52,24 +54,39 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private data class TabItem(val label: String, val icon: ImageVector)
+private data class TabItem(val label: String, val icon: ImageVector, val screen: Screen)
 
+/**
+ * NAVEGACIÓN Y ESTRUCTURA DE LA APLICACIÓN:
+ * Contenedor raíz que integra NavController, la barra de navegación inferior (NavigationBar)
+ * y el grafo de navegación (GanaderoNavGraph).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppRoot() {
+    // NAVEGACIÓN: Inicialización del NavController
+    val navController = rememberNavController()
+
     val tabs = listOf(
-        TabItem("Inicio", Icons.Filled.Dashboard),
-        TabItem("Animales", Icons.Filled.Pets),
-        TabItem("Leche", Icons.Filled.WaterDrop),
-        TabItem("Vacunas", Icons.Filled.MedicalServices),
-        TabItem("Finanzas", Icons.Filled.AttachMoney)
+        TabItem("Inicio", Icons.Filled.Dashboard, Screen.Dashboard),
+        TabItem("Animales", Icons.Filled.Pets, Screen.Animales),
+        TabItem("Leche", Icons.Filled.WaterDrop, Screen.Produccion),
+        TabItem("Vacunas", Icons.Filled.MedicalServices, Screen.Vacunas),
+        TabItem("Finanzas", Icons.Filled.AttachMoney, Screen.Finanzas)
     )
-    var tab by remember { mutableStateOf(0) }
+
+    // NAVEGACIÓN: Suscripción a la ruta actual para actualizar el estado del NavigationBar
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val currentTab = tabs.find { tab ->
+        currentRoute != null && currentRoute.startsWith(tab.screen.route.split("/")[0])
+    } ?: tabs.first()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(tabs[tab].label, fontWeight = FontWeight.Bold) },
+                title = { Text(currentTab.label, fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Orange,
                     titleContentColor = Color.White
@@ -78,12 +95,22 @@ fun AppRoot() {
         },
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
-                tabs.forEachIndexed { i, t ->
+                tabs.forEach { tabItem ->
+                    val isSelected = currentRoute != null && currentRoute.startsWith(tabItem.screen.route.split("/")[0])
                     NavigationBarItem(
-                        selected = tab == i,
-                        onClick = { tab = i },
-                        icon = { Icon(t.icon, contentDescription = t.label) },
-                        label = { Text(t.label) },
+                        selected = isSelected,
+                        onClick = {
+                            // NAVEGACIÓN: Transición entre pantallas con gestión de pila (saveState, restoreState)
+                            navController.navigate(tabItem.screen.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = { Icon(tabItem.icon, contentDescription = tabItem.label) },
+                        label = { Text(tabItem.label) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Orange,
                             selectedTextColor = Orange,
@@ -95,13 +122,8 @@ fun AppRoot() {
         }
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
-            when (tab) {
-                0 -> DashboardScreen()
-                1 -> AnimalesScreen()
-                2 -> ProduccionScreen()
-                3 -> VacunasScreen()
-                else -> FinanzasScreen()
-            }
+            // NAVEGACIÓN: Hosting del grafo de navegación con NavHost
+            GanaderoNavGraph(navController = navController)
         }
     }
 }

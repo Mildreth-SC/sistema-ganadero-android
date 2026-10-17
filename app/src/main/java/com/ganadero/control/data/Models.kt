@@ -1,42 +1,48 @@
 package com.ganadero.control.data
 
+/**
+ * MODELOS DE DOMINIO:
+ * Modelos inmutables (val) independientes de Room; la UI y los ViewModels trabajan solo con estos.
+ * El estado del animal se expresa con un único campo [activo].
+ */
 data class Animal(
-    var id: Int = 0,
-    var codigo: String = "",
-    var nombre: String = "",
-    var tipo: String = "Mixto",
-    var raza: String = "",
-    var sexo: String = "Hembra",
-    var fechaNacimiento: String = "",
-    var estado: String = "Activo",
-    var pesoActual: Double = 0.0,
-    var madreNombre: String = "",
-    var madreRaza: String = "",
-    var padreNombre: String = "",
-    var padreRaza: String = ""
+    val id: Int = 0,
+    val codigo: String = "",
+    val nombre: String = "",
+    val tipo: String = "Mixto",
+    val raza: String = "",
+    val sexo: String = "Hembra",
+    val fechaNacimiento: String = "",
+    val pesoActual: Double = 0.0,
+    val madreNombre: String = "",
+    val madreRaza: String = "",
+    val padreNombre: String = "",
+    val padreRaza: String = "",
+    val fotoUri: String? = null,
+    val activo: Boolean = true
 )
 
 data class Produccion(
-    var id: Int = 0,
-    var animalId: Int = 0,
-    var fecha: String = "",
-    var turno: String = "Mañana",
-    var litros: Double = 0.0
+    val id: Int = 0,
+    val animalId: Int = 0,
+    val fecha: String = "",
+    val turno: String = "Mañana",
+    val litros: Double = 0.0
 )
 
 data class Vacuna(
-    var id: Int = 0,
-    var animalId: Int = 0,
-    var tipo: String = "",
-    var fechaAplicacion: String = "",
-    var proximaFecha: String = ""
+    val id: Int = 0,
+    val animalId: Int = 0,
+    val tipo: String = "",
+    val fechaAplicacion: String = "",
+    val proximaFecha: String = ""
 )
 
 data class Finanza(
-    var id: Int = 0,
-    var fecha: String = "",
-    var tipo: String = "Ingreso",
-    var categoria: String = "",
-    var monto: Double = 0.0,
-    var descripcion: String = ""
+    val id: Int = 0,
+    val fecha: String = "",
+    val tipo: String = "Ingreso",
+    val categoria: String = "",
+    val monto: Double = 0.0,
+    val descripcion: String = ""
 )

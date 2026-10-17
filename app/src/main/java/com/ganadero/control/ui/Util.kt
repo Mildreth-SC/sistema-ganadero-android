@@ -1,6 +1,7 @@
 package com.ganadero.control.ui
 
 import java.util.Calendar
+import java.util.TimeZone
 
 fun todayStr(): String {
     val c = Calendar.getInstance()
@@ -9,6 +10,32 @@ fun todayStr(): String {
         c.get(Calendar.MONTH) + 1,
         c.get(Calendar.DAY_OF_MONTH)
     )
+}
+
+fun millisToDateStr(millis: Long): String {
+    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+    cal.timeInMillis = millis
+    return "%04d-%02d-%02d".format(
+        cal.get(Calendar.YEAR),
+        cal.get(Calendar.MONTH) + 1,
+        cal.get(Calendar.DAY_OF_MONTH)
+    )
+}
+
+fun dateStrToMillis(dateStr: String): Long {
+    try {
+        val parts = dateStr.split("-")
+        if (parts.size == 3) {
+            val year = parts[0].toInt()
+            val month = parts[1].toInt() - 1
+            val day = parts[2].toInt()
+            val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+            cal.clear()
+            cal.set(year, month, day)
+            return cal.timeInMillis
+        }
+    } catch (_: Exception) {}
+    return Calendar.getInstance().timeInMillis
 }
 
 fun last7Days(): List<Pair<String, String>> {

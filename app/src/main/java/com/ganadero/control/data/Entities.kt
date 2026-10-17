@@ -1,7 +1,14 @@
 package com.ganadero.control.data
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
+
+/**
+ * CAPA DE DATOS Y PERSISTENCIA LOCAL (ROOM / SQLITE):
+ * Entidades inmutables (@Entity) con integridad referencial declarada (@ForeignKey + indices).
+ */
 
 @Entity(tableName = "animales")
 data class AnimalEntity(
@@ -12,15 +19,27 @@ data class AnimalEntity(
     val raza: String,
     val sexo: String,
     val fechaNacimiento: String,
-    val estado: String,
     val pesoActual: Double,
     val madreNombre: String,
     val madreRaza: String,
     val padreNombre: String,
-    val padreRaza: String
+    val padreRaza: String,
+    val fotoUri: String? = null,
+    val activo: Boolean = true
 )
 
-@Entity(tableName = "producciones")
+@Entity(
+    tableName = "producciones",
+    foreignKeys = [
+        ForeignKey(
+            entity = AnimalEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["animalId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["animalId"])]
+)
 data class ProduccionEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val animalId: Int,
@@ -29,7 +48,18 @@ data class ProduccionEntity(
     val litros: Double
 )
 
-@Entity(tableName = "vacunas")
+@Entity(
+    tableName = "vacunas",
+    foreignKeys = [
+        ForeignKey(
+            entity = AnimalEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["animalId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["animalId"])]
+)
 data class VacunaEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val animalId: Int,
@@ -48,19 +78,25 @@ data class FinanzaEntity(
     val descripcion: String
 )
 
-// Mapeadores
+/**
+ * MAPEADORES (MAPPERS):
+ * Funciones de extensión para convertir bidireccionalmente entre Entidades de Room y Modelos de Dominio.
+ */
+
 fun AnimalEntity.toDomain() = Animal(
     id = id, codigo = codigo, nombre = nombre, tipo = tipo, raza = raza,
-    sexo = sexo, fechaNacimiento = fechaNacimiento, estado = estado,
+    sexo = sexo, fechaNacimiento = fechaNacimiento,
     pesoActual = pesoActual, madreNombre = madreNombre, madreRaza = madreRaza,
-    padreNombre = padreNombre, padreRaza = padreRaza
+    padreNombre = padreNombre, padreRaza = padreRaza, fotoUri = fotoUri,
+    activo = activo
 )
 
 fun Animal.toEntity() = AnimalEntity(
     id = id, codigo = codigo, nombre = nombre, tipo = tipo, raza = raza,
-    sexo = sexo, fechaNacimiento = fechaNacimiento, estado = estado,
+    sexo = sexo, fechaNacimiento = fechaNacimiento,
     pesoActual = pesoActual, madreNombre = madreNombre, madreRaza = madreRaza,
-    padreNombre = padreNombre, padreRaza = padreRaza
+    padreNombre = padreNombre, padreRaza = padreRaza, fotoUri = fotoUri,
+    activo = activo
 )
 
 fun ProduccionEntity.toDomain() = Produccion(
