@@ -1,9 +1,13 @@
-package com.ganadero.control.data
+package com.ganadero.control.data.local
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.ganadero.control.model.Animal
+import com.ganadero.control.model.Finanza
+import com.ganadero.control.model.Produccion
+import com.ganadero.control.model.Vacuna
 
 /**
  * CAPA DE DATOS Y PERSISTENCIA LOCAL (ROOM / SQLITE):

@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ganadero.control.data.Finanza
+import com.ganadero.control.model.Finanza
 import com.ganadero.control.ui.components.BrownColor
 import com.ganadero.control.ui.components.CampoForm
 import com.ganadero.control.ui.components.ConfirmDialog

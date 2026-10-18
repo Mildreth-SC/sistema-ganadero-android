@@ -43,8 +43,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ganadero.control.data.Animal
-import com.ganadero.control.data.Produccion
+import com.ganadero.control.model.Animal
+import com.ganadero.control.model.Produccion
 import com.ganadero.control.ui.components.ConfirmDialog
 import com.ganadero.control.ui.components.SuccessDialog
 import com.ganadero.control.ui.theme.Brown

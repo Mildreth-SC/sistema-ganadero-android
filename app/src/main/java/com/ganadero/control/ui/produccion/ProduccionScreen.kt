@@ -53,8 +53,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.ganadero.control.data.Animal
-import com.ganadero.control.data.Produccion
+import com.ganadero.control.model.Animal
+import com.ganadero.control.model.Produccion
 import com.ganadero.control.ui.components.BrownColor
 import com.ganadero.control.ui.components.CampoForm
 import com.ganadero.control.ui.components.ConfirmDialog

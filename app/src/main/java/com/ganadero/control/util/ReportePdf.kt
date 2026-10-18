@@ -4,9 +4,9 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
-import com.ganadero.control.data.Animal
-import com.ganadero.control.data.Finanza
-import com.ganadero.control.data.Produccion
+import com.ganadero.control.model.Animal
+import com.ganadero.control.model.Finanza
+import com.ganadero.control.model.Produccion
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date

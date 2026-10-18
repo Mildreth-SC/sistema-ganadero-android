@@ -1,5 +1,17 @@
 package com.ganadero.control.data
 
+import com.ganadero.control.data.local.AnimalDao
+import com.ganadero.control.data.local.AnimalEntity
+import com.ganadero.control.data.local.FinanzaDao
+import com.ganadero.control.data.local.FinanzaEntity
+import com.ganadero.control.data.local.ProduccionDao
+import com.ganadero.control.data.local.ProduccionEntity
+import com.ganadero.control.data.local.VacunaDao
+import com.ganadero.control.data.local.VacunaEntity
+import com.ganadero.control.data.repository.GanaderoRepositoryImpl
+import com.ganadero.control.model.Animal
+import com.ganadero.control.model.Finanza
+import com.ganadero.control.model.Produccion
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first

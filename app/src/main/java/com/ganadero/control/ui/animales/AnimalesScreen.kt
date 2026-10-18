@@ -66,7 +66,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.ganadero.control.data.Animal
+import com.ganadero.control.model.Animal
 import com.ganadero.control.ui.components.ConfirmDialog
 import com.ganadero.control.ui.components.SuccessDialog
 import com.ganadero.control.ui.theme.*

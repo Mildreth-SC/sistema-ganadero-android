@@ -3,8 +3,8 @@ package com.ganadero.control.ui.animales
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ganadero.control.data.Animal
-import com.ganadero.control.data.GanaderoRepository
+import com.ganadero.control.model.Animal
+import com.ganadero.control.data.repository.GanaderoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -25,7 +25,7 @@ sealed interface AnimalDetailUiState {
     object Loading : AnimalDetailUiState
     data class Success(
         val animal: Animal,
-        val producciones: List<com.ganadero.control.data.Produccion>
+        val producciones: List<com.ganadero.control.model.Produccion>
     ) : AnimalDetailUiState
     object NotFound : AnimalDetailUiState
     data class Error(val message: String) : AnimalDetailUiState

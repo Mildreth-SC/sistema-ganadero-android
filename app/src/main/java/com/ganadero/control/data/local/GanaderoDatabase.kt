@@ -1,4 +1,4 @@
-package com.ganadero.control.data
+package com.ganadero.control.data.local
 
 import android.content.Context
 import androidx.room.Database
@@ -6,6 +6,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.ganadero.control.model.Animal
+import com.ganadero.control.model.Finanza
+import com.ganadero.control.model.Produccion
+import com.ganadero.control.model.Vacuna
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

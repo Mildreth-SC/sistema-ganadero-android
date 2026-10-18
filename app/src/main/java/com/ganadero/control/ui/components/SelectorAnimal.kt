@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ganadero.control.data.Animal
+import com.ganadero.control.model.Animal
 import com.ganadero.control.ui.theme.TextPrimary
 
 @Composable

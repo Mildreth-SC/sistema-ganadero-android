@@ -1,11 +1,11 @@
 package com.ganadero.control.di
 
 import android.content.Context
-import com.ganadero.control.data.AnimalDao
-import com.ganadero.control.data.FinanzaDao
-import com.ganadero.control.data.GanaderoDatabase
-import com.ganadero.control.data.ProduccionDao
-import com.ganadero.control.data.VacunaDao
+import com.ganadero.control.data.local.AnimalDao
+import com.ganadero.control.data.local.FinanzaDao
+import com.ganadero.control.data.local.GanaderoDatabase
+import com.ganadero.control.data.local.ProduccionDao
+import com.ganadero.control.data.local.VacunaDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

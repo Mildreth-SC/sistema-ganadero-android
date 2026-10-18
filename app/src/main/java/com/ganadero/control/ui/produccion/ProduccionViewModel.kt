@@ -2,9 +2,9 @@ package com.ganadero.control.ui.produccion
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ganadero.control.data.Animal
-import com.ganadero.control.data.GanaderoRepository
-import com.ganadero.control.data.Produccion
+import com.ganadero.control.model.Animal
+import com.ganadero.control.data.repository.GanaderoRepository
+import com.ganadero.control.model.Produccion
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

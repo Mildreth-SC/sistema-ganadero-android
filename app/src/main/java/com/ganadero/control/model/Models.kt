@@ -1,4 +1,4 @@
-package com.ganadero.control.data
+package com.ganadero.control.model
 
 /**
  * MODELOS DE DOMINIO:

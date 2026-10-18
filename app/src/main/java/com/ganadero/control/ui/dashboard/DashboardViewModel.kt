@@ -2,11 +2,11 @@ package com.ganadero.control.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ganadero.control.data.Animal
-import com.ganadero.control.data.Finanza
-import com.ganadero.control.data.GanaderoRepository
-import com.ganadero.control.data.Produccion
-import com.ganadero.control.data.Vacuna
+import com.ganadero.control.model.Animal
+import com.ganadero.control.model.Finanza
+import com.ganadero.control.data.repository.GanaderoRepository
+import com.ganadero.control.model.Produccion
+import com.ganadero.control.model.Vacuna
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

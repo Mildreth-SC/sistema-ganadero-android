@@ -2,8 +2,8 @@ package com.ganadero.control.ui.finanzas
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ganadero.control.data.Finanza
-import com.ganadero.control.data.GanaderoRepository
+import com.ganadero.control.model.Finanza
+import com.ganadero.control.data.repository.GanaderoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

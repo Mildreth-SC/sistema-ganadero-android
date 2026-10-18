@@ -1,7 +1,7 @@
 package com.ganadero.control.di
 
-import com.ganadero.control.data.GanaderoRepository
-import com.ganadero.control.data.GanaderoRepositoryImpl
+import com.ganadero.control.data.repository.GanaderoRepository
+import com.ganadero.control.data.repository.GanaderoRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
