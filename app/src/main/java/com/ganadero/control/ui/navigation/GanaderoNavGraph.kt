@@ -50,15 +50,14 @@ fun GanaderoNavGraph(
         composable(Screen.Finanzas.route) {
             FinanzasScreen(viewModel = hiltViewModel())
         }
-        // NAVEGACIÓN CON ARGUMENTOS: Definición de ruta con argumento seguro tipo Int (animalId)
+        // NAVEGACIÓN CON ARGUMENTOS: Ruta con argumento seguro tipo Int (animalId).
+        // El ViewModel (AnimalDetailViewModel) lo recibe vía SavedStateHandle inyectado por Hilt.
         composable(
             route = Screen.AnimalDetail.route,
             arguments = listOf(navArgument("animalId") { type = NavType.IntType })
-        ) { backStackEntry ->
-            val animalId = backStackEntry.arguments?.getInt("animalId") ?: 0
+        ) {
             AnimalDetailScreen(
                 viewModel = hiltViewModel(),
-                animalId = animalId,
                 onBack = { navController.popBackStack() }
             )
         }

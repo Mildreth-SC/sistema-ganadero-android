@@ -137,18 +137,7 @@ class AnimalesViewModelTest {
     }
 
     @Test
-    fun `getAnimal devuelve solo el animal solicitado`() = runTest {
-        val repo = FakeGanaderoRepository()
-        repo.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
-        repo.addAnimal(Animal(codigo = "A-002", nombre = "Estrella"))
-        val viewModel = AnimalesViewModel(repo)
-
-        val animal = viewModel.getAnimal(2).first()
-        assertEquals("Estrella", animal?.nombre)
-    }
-
-    @Test
-    fun `eliminarAnimal elimina y emite ShowSuccess`() = runTest {
+    fun `confirmarEliminar elimina y emite ShowSuccess`() = runTest {
         val repo = FakeGanaderoRepository()
         repo.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
         val viewModel = AnimalesViewModel(repo)
@@ -157,7 +146,8 @@ class AnimalesViewModelTest {
         val events = mutableListOf<AnimalesEvent>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiEvent.collect { events.add(it) } }
 
-        viewModel.eliminarAnimal(Animal(id = 1, codigo = "A-001", nombre = "Luna"))
+        viewModel.pedirEliminar(Animal(id = 1, codigo = "A-001", nombre = "Luna"))
+        viewModel.confirmarEliminar()
 
         assertEquals(1, events.size)
         assertTrue(events[0] is AnimalesEvent.ShowSuccess)

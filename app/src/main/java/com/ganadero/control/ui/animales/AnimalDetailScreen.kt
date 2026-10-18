@@ -54,12 +54,10 @@ import com.ganadero.control.ui.theme.Orange
 import com.ganadero.control.ui.theme.Success
 import com.ganadero.control.ui.theme.TextPrimary
 import com.ganadero.control.ui.theme.TextSecondary
-import kotlinx.coroutines.flow.onEach
 
 @Composable
 fun AnimalDetailScreen(
-    viewModel: AnimalesViewModel,
-    animalId: Int,
+    viewModel: AnimalDetailViewModel,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -67,38 +65,27 @@ fun AnimalDetailScreen(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var deletedMessage by remember { mutableStateOf<String?>(null) }
 
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is AnimalesEvent.ShowToast ->
+                is AnimalDetailEvent.ShowToast ->
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
-                is AnimalesEvent.ShowSuccess ->
+                is AnimalDetailEvent.ShowSuccess ->
                     deletedMessage = event.message
             }
         }
     }
 
-    var loaded by remember(animalId) { mutableStateOf(false) }
-    val animal by remember(animalId) {
-        viewModel.getAnimal(animalId).onEach { loaded = true }
-    }.collectAsStateWithLifecycle(initialValue = null)
-
-    val producciones by remember(animalId) {
-        viewModel.getProduccionesByAnimal(animalId)
-    }.collectAsStateWithLifecycle(initialValue = emptyList())
-
-    when {
-        !loaded -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    when (val state = uiState) {
+        is AnimalDetailUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Orange)
         }
-        animal != null -> AnimalDetalleContent(
-            animal = animal!!,
-            producciones = producciones,
-            onEdit = { showEdit = true },
-            onDelete = { showDeleteConfirm = true },
-            onBack = onBack
-        )
-        deletedMessage == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        is AnimalDetailUiState.Error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(state.message, color = Danger)
+        }
+        is AnimalDetailUiState.NotFound -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("Animal no encontrado", color = TextSecondary)
                 Spacer(Modifier.height(12.dp))
@@ -111,8 +98,16 @@ fun AnimalDetailScreen(
                 }
             }
         }
+        is AnimalDetailUiState.Success -> AnimalDetalleContent(
+            animal = state.animal,
+            producciones = state.producciones,
+            onEdit = { showEdit = true },
+            onDelete = { showDeleteConfirm = true },
+            onBack = onBack
+        )
     }
 
+    val animal = (uiState as? AnimalDetailUiState.Success)?.animal
     if (showEdit && animal != null) {
         AnimalDialog(
             animal = animal,
@@ -125,12 +120,11 @@ fun AnimalDetailScreen(
     }
 
     if (showDeleteConfirm && animal != null) {
-        val a = animal!!
         ConfirmDialog(
             titulo = "Eliminar animal",
-            mensaje = "¿Estás seguro de eliminar el animal ${a.codigo}${if (a.nombre.isNotEmpty()) " (${a.nombre})" else ""}? Se eliminarán también sus registros asociados.",
+            mensaje = "¿Estás seguro de eliminar el animal ${animal.codigo}${if (animal.nombre.isNotEmpty()) " (${animal.nombre})" else ""}? Se eliminarán también sus registros asociados.",
             onConfirm = {
-                viewModel.eliminarAnimal(a)
+                viewModel.deleteAnimal(animal)
                 showDeleteConfirm = false
             },
             onDismiss = { showDeleteConfirm = false }
