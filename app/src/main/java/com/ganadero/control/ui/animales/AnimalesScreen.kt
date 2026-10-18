@@ -297,6 +297,7 @@ internal fun AnimalDialog(
     var padre by remember { mutableStateOf(animal?.padreNombre ?: "") }
     var madre by remember { mutableStateOf(animal?.madreNombre ?: "") }
     var activo by remember { mutableStateOf(animal?.activo ?: true) }
+    var estadoRepro by remember { mutableStateOf(animal?.estadoReproductivo ?: "Ideal") }
 
     val selectorFoto = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -386,6 +387,13 @@ internal fun AnimalDialog(
                                 }
                             }
 
+                            Etiqueta("Estado reproductivo")
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                PillBtn("Ideal", estadoRepro == "Ideal") { estadoRepro = "Ideal" }
+                                PillBtn("En gestión", estadoRepro == "En gestión") { estadoRepro = "En gestión" }
+                                PillBtn("Descarte", estadoRepro == "Descarte") { estadoRepro = "Descarte" }
+                            }
+
                             Text(
                                 "Genealogía",
                                 fontSize = 15.sp,
@@ -453,7 +461,8 @@ internal fun AnimalDialog(
                                         madreNombre = madre.trim(),
                                         padreNombre = padre.trim(),
                                         fotoUri = foto,
-                                        activo = activo
+                                        activo = activo,
+                                        estadoReproductivo = estadoRepro
                                     ) ?: Animal(
                                         codigo = codigo.trim(),
                                         nombre = nombre.trim(),
@@ -464,7 +473,8 @@ internal fun AnimalDialog(
                                         madreNombre = madre.trim(),
                                         padreNombre = padre.trim(),
                                         fotoUri = foto,
-                                        activo = true
+                                        activo = true,
+                                        estadoReproductivo = estadoRepro
                                     )
                                 )
                             }

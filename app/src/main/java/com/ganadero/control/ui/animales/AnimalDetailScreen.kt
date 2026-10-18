@@ -1,6 +1,7 @@
 package com.ganadero.control.ui.animales
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
@@ -24,6 +26,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,12 +44,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ganadero.control.data.Animal
+import com.ganadero.control.data.Produccion
 import com.ganadero.control.ui.components.ConfirmDialog
 import com.ganadero.control.ui.components.SuccessDialog
 import com.ganadero.control.ui.theme.Brown
 import com.ganadero.control.ui.theme.CardBg
 import com.ganadero.control.ui.theme.Danger
 import com.ganadero.control.ui.theme.Orange
+import com.ganadero.control.ui.theme.Success
 import com.ganadero.control.ui.theme.TextPrimary
 import com.ganadero.control.ui.theme.TextSecondary
 import kotlinx.coroutines.flow.onEach
@@ -78,14 +83,20 @@ fun AnimalDetailScreen(
         viewModel.getAnimal(animalId).onEach { loaded = true }
     }.collectAsStateWithLifecycle(initialValue = null)
 
+    val producciones by remember(animalId) {
+        viewModel.getProduccionesByAnimal(animalId)
+    }.collectAsStateWithLifecycle(initialValue = emptyList())
+
     when {
         !loaded -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Orange)
         }
         animal != null -> AnimalDetalleContent(
             animal = animal!!,
+            producciones = producciones,
             onEdit = { showEdit = true },
-            onDelete = { showDeleteConfirm = true }
+            onDelete = { showDeleteConfirm = true },
+            onBack = onBack
         )
         deletedMessage == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -140,8 +151,10 @@ fun AnimalDetailScreen(
 @Composable
 private fun AnimalDetalleContent(
     animal: Animal,
+    producciones: List<Produccion>,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onBack: () -> Unit
 ) {
     Column(
         Modifier
@@ -150,6 +163,26 @@ private fun AnimalDetalleContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = TextPrimary
+                )
+            }
+            Spacer(Modifier.width(4.dp))
+            Text(
+                "Detalle del animal",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = TextPrimary
+            )
+        }
+
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = CardBg),
@@ -175,6 +208,8 @@ private fun AnimalDetalleContent(
                     )
                     Spacer(Modifier.height(6.dp))
                     EstadoBadge(animal.activo)
+                    Spacer(Modifier.height(6.dp))
+                    EstadoReproBadge(animal.estadoReproductivo)
                 }
             }
         }
@@ -193,6 +228,20 @@ private fun AnimalDetalleContent(
             DatoFila("Raza del padre", animal.padreRaza.ifBlank { "—" })
             DatoFila("Madre", animal.madreNombre.ifBlank { "—" })
             DatoFila("Raza de la madre", animal.madreRaza.ifBlank { "—" })
+        }
+
+        if (animal.tipo == "Leche") {
+            val recientes = producciones.take(7).reversed()
+            val totalLitros = producciones.sumOf { it.litros }
+            DetalleSeccion("Producción de leche") {
+                ResumenProduccion(producciones.size, totalLitros)
+                Spacer(Modifier.height(4.dp))
+                GraficaBarras(
+                    datos = recientes.map { p ->
+                        p.fecha.takeLast(5) to p.litros.toFloat()
+                    }
+                )
+            }
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -244,5 +293,22 @@ private fun DatoFila(etiqueta: String, valor: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(etiqueta, fontSize = 13.sp, color = TextSecondary)
         Text(valor, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextPrimary)
+    }
+}
+
+@Composable
+internal fun EstadoReproBadge(estado: String) {
+    val color = when (estado) {
+        "Ideal" -> Success
+        "En gestión" -> Orange
+        else -> Danger
+    }
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(color.copy(alpha = 0.15f))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Text(estado, fontSize = 10.sp, color = color, fontWeight = FontWeight.Medium)
     }
 }

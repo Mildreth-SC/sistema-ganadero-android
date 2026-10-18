@@ -44,6 +44,9 @@ class FakeProduccionDao : ProduccionDao {
 
     override fun getAllProducciones(): Flow<List<ProduccionEntity>> = store
 
+    override fun getByAnimalId(animalId: Int): Flow<List<ProduccionEntity>> =
+        store.map { list -> list.filter { it.animalId == animalId }.sortedByDescending { it.fecha } }
+
     override suspend fun insertProduccion(produccion: ProduccionEntity): Long {
         val id = if (produccion.id == 0) nextId++ else produccion.id
         store.update { list -> list + produccion.copy(id = id) }

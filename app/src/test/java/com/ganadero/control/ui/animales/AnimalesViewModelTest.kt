@@ -53,6 +53,8 @@ class FakeGanaderoRepository : GanaderoRepository {
 
     override fun getAnimal(id: Int): Flow<Animal?> = _animales.map { list -> list.find { it.id == id } }
 
+    override fun getProduccionesByAnimal(animalId: Int): Flow<List<Produccion>> = MutableStateFlow(emptyList())
+
     override suspend fun addAnimal(a: Animal) {
         val id = if (a.id == 0) nextId++ else a.id
         _animales.update { list -> list.filterNot { it.id == id } + a.copy(id = id) }

@@ -20,7 +20,7 @@ import java.util.Calendar
  */
 @Database(
     entities = [AnimalEntity::class, ProduccionEntity::class, VacunaEntity::class, FinanzaEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class GanaderoDatabase : RoomDatabase() {
@@ -115,6 +115,20 @@ abstract class GanaderoDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migración 2 → 3:
+         * Se agrega la columna `estadoReproductivo` a la tabla `animales` con valor
+         * por defecto 'Ideal'. SQLite (API 24) sí soporta ADD COLUMN cuando la columna
+         * tiene un valor por defecto, por eso es una migración simple.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `animales` ADD COLUMN `estadoReproductivo` TEXT NOT NULL DEFAULT 'Ideal'"
+                )
+            }
+        }
+
         @Volatile
         private var INSTANCE: GanaderoDatabase? = null
 
@@ -125,7 +139,7 @@ abstract class GanaderoDatabase : RoomDatabase() {
                     GanaderoDatabase::class.java,
                     "ganadero_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .addCallback(GanaderoDatabaseCallback(scope))
                     .build()
                 INSTANCE = instance

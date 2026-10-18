@@ -76,6 +76,9 @@ interface ProduccionDao {
     @Query("SELECT * FROM producciones")
     fun getAllProducciones(): Flow<List<ProduccionEntity>>
 
+    @Query("SELECT * FROM producciones WHERE animalId = :animalId ORDER BY fecha DESC")
+    fun getByAnimalId(animalId: Int): Flow<List<ProduccionEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduccion(produccion: ProduccionEntity): Long
 

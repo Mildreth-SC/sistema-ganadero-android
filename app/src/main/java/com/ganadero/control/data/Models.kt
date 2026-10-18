@@ -19,7 +19,8 @@ data class Animal(
     val padreNombre: String = "",
     val padreRaza: String = "",
     val fotoUri: String? = null,
-    val activo: Boolean = true
+    val activo: Boolean = true,
+    val estadoReproductivo: String = "Ideal"
 )
 
 data class Produccion(

@@ -25,7 +25,8 @@ data class AnimalEntity(
     val padreNombre: String,
     val padreRaza: String,
     val fotoUri: String? = null,
-    val activo: Boolean = true
+    val activo: Boolean = true,
+    val estadoReproductivo: String = "Ideal"
 )
 
 @Entity(
@@ -88,7 +89,7 @@ fun AnimalEntity.toDomain() = Animal(
     sexo = sexo, fechaNacimiento = fechaNacimiento,
     pesoActual = pesoActual, madreNombre = madreNombre, madreRaza = madreRaza,
     padreNombre = padreNombre, padreRaza = padreRaza, fotoUri = fotoUri,
-    activo = activo
+    activo = activo, estadoReproductivo = estadoReproductivo
 )
 
 fun Animal.toEntity() = AnimalEntity(
@@ -96,7 +97,7 @@ fun Animal.toEntity() = AnimalEntity(
     sexo = sexo, fechaNacimiento = fechaNacimiento,
     pesoActual = pesoActual, madreNombre = madreNombre, madreRaza = madreRaza,
     padreNombre = padreNombre, padreRaza = padreRaza, fotoUri = fotoUri,
-    activo = activo
+    activo = activo, estadoReproductivo = estadoReproductivo
 )
 
 fun ProduccionEntity.toDomain() = Produccion(

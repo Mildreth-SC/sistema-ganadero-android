@@ -19,6 +19,8 @@ interface GanaderoRepository {
 
     fun getAnimal(id: Int): Flow<Animal?>
 
+    fun getProduccionesByAnimal(animalId: Int): Flow<List<Produccion>>
+
     suspend fun addAnimal(a: Animal)
     suspend fun updateAnimal(a: Animal)
     suspend fun deleteAnimal(id: Int)
@@ -64,6 +66,9 @@ class GanaderoRepositoryImpl @Inject constructor(
 
     override fun getAnimal(id: Int): Flow<Animal?> =
         animalDao.getById(id).map { it?.toDomain() }
+
+    override fun getProduccionesByAnimal(animalId: Int): Flow<List<Produccion>> =
+        produccionDao.getByAnimalId(animalId).map { list -> list.map { it.toDomain() } }
 
     override suspend fun addAnimal(a: Animal) = withContext(Dispatchers.IO) {
         animalDao.insertAnimal(a.toEntity())

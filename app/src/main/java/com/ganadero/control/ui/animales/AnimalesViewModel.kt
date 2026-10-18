@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ganadero.control.data.Animal
 import com.ganadero.control.data.GanaderoRepository
+import com.ganadero.control.data.Produccion
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -90,6 +91,9 @@ class AnimalesViewModel @Inject constructor(
     }
 
     fun getAnimal(id: Int): Flow<Animal?> = repository.getAnimal(id)
+
+    fun getProduccionesByAnimal(animalId: Int): Flow<List<Produccion>> =
+        repository.getProduccionesByAnimal(animalId)
 
     fun eliminarAnimal(a: Animal) {
         viewModelScope.launch {
