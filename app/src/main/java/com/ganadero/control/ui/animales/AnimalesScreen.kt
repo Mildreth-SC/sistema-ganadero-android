@@ -31,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -78,6 +79,7 @@ fun AnimalesScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showDialog by remember { mutableStateOf(false) }
+    var animalToEdit by remember { mutableStateOf<Animal?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
@@ -95,6 +97,7 @@ fun AnimalesScreen(
         state = uiState,
         onAdd = { showDialog = true },
         onAnimalClick = onAnimalClick,
+        onEdit = { animalToEdit = it },
         onDelete = viewModel::pedirEliminar
     )
 
@@ -104,6 +107,17 @@ fun AnimalesScreen(
             onSave = {
                 viewModel.addAnimal(it)
                 showDialog = false
+            }
+        )
+    }
+
+    animalToEdit?.let { animal ->
+        AnimalDialog(
+            animal = animal,
+            onClose = { animalToEdit = null },
+            onSave = {
+                viewModel.updateAnimal(it)
+                animalToEdit = null
             }
         )
     }
@@ -127,6 +141,7 @@ private fun AnimalesContent(
     state: AnimalesUiState,
     onAdd: () -> Unit,
     onAnimalClick: (Int) -> Unit,
+    onEdit: (Animal) -> Unit,
     onDelete: (Animal) -> Unit
 ) {
     Box(Modifier.fillMaxSize()) {
@@ -155,6 +170,7 @@ private fun AnimalesContent(
                             AnimalCard(
                                 a = a,
                                 onClick = { onAnimalClick(a.id) },
+                                onEdit = { onEdit(a) },
                                 onDelete = { onDelete(a) }
                             )
                         }
@@ -177,7 +193,12 @@ private fun AnimalesContent(
 // ------------------- TARJETA
 
 @Composable
-private fun AnimalCard(a: Animal, onClick: () -> Unit, onDelete: () -> Unit) {
+private fun AnimalCard(
+    a: Animal,
+    onClick: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
@@ -223,6 +244,22 @@ private fun AnimalCard(a: Animal, onClick: () -> Unit, onDelete: () -> Unit) {
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 EstadoBadge(a.activo)
+                Box(
+                    Modifier
+                        .size(35.dp)
+                        .clip(CircleShape)
+                        .background(Orange.copy(alpha = 0.2f))
+                        .clickable(onClick = onEdit),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Filled.Edit,
+                        contentDescription = "Editar",
+                        tint = Orange,
+                        modifier = Modifier.size(21.dp)
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
                 Box(
                     Modifier
                         .size(35.dp)
@@ -285,7 +322,6 @@ internal fun AnimalDialog(
 ) {
     val context = LocalContext.current
     val esNuevo = animal == null
-    var editando by remember { mutableStateOf(esNuevo) }
 
     var foto by remember { mutableStateOf(animal?.fotoUri) }
     var codigo by remember { mutableStateOf(animal?.codigo ?: "") }
@@ -335,10 +371,7 @@ internal fun AnimalDialog(
                             .clip(CircleShape)
                             .background(Color(0xFFDCCFC7))
                             .border(1.dp, Brown, CircleShape)
-                            .then(
-                                if (editando) Modifier.clickable { selectorFoto.launch(arrayOf("image/*")) }
-                                else Modifier
-                            ),
+                            .clickable { selectorFoto.launch(arrayOf("image/*")) },
                         contentAlignment = Alignment.Center
                     ) {
                         if (foto != null) {
@@ -352,16 +385,13 @@ internal fun AnimalDialog(
                             Text("🖼", fontSize = 28.sp)
                         }
                     }
-                    if (editando) {
-                        Text(
-                            if (foto == null) "Agregar foto" else "Cambiar foto",
-                            fontSize = 11.sp,
-                            color = TextSecondary
-                        )
-                    }
+                    Text(
+                        if (foto == null) "Agregar foto" else "Cambiar foto",
+                        fontSize = 11.sp,
+                        color = TextSecondary
+                    )
 
-                    if (editando) {
-                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             CampoForm("Codigo/Arete", codigo, "Codigo/Arete") { codigo = it }
                             CampoForm("Nombre", nombre, "Nombre") { nombre = it }
                             CampoForm("Raza", raza, "Raza") { raza = it }
@@ -403,32 +433,6 @@ internal fun AnimalDialog(
                             CampoForm("Padre", padre, "Nombre del padre") { padre = it }
                             CampoForm("Madre", madre, "Nombre de la madre") { madre = it }
                         }
-                    } else {
-                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    "${codigo}${if (nombre.isNotEmpty()) "-$nombre" else ""}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp,
-                                    color = TextPrimary,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                EstadoBadge(activo)
-                            }
-                            DatoAnimal("Raza", raza)
-                            DatoAnimal("Peso", "$peso kg")
-                            DatoAnimal("Sexo", sexo)
-                            DatoAnimal("Tipo", tipo)
-                            Text(
-                                "Genealogía",
-                                fontSize = 15.sp,
-                                color = TextSecondary,
-                                modifier = Modifier.padding(top = 6.dp)
-                            )
-                            DatoAnimal("Padre", padre)
-                            DatoAnimal("Madre", madre)
-                        }
-                    }
                 }
 
                 // Botones
@@ -439,16 +443,14 @@ internal fun AnimalDialog(
                 ) {
                     TextButton(onClick = onClose) {
                         Text(
-                            if (editando) "Cancelar" else "Cerrar",
+                            "Cancelar",
                             color = TextSecondary,
                             fontSize = 15.sp
                         )
                     }
                     Button(
                         onClick = {
-                            if (!editando) {
-                                editando = true
-                            } else if (codigo.isNotBlank()) {
+                            if (codigo.isNotBlank()) {
                                 val pesoNum = peso.toDoubleOrNull() ?: animal?.pesoActual ?: 0.0
                                 onSave(
                                     animal?.copy(
@@ -483,7 +485,7 @@ internal fun AnimalDialog(
                         shape = CircleShape,
                         modifier = Modifier.width(120.dp)
                     ) {
-                        Text(if (editando) "Guardar" else "Editar", color = Color.White)
+                        Text("Guardar", color = Color.White)
                     }
                 }
             }
@@ -553,15 +555,3 @@ private fun PillBtn(texto: String, seleccionado: Boolean, onClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun DatoAnimal(etiqueta: String, valor: String) {
-    Column(Modifier.fillMaxWidth()) {
-        Text(etiqueta, fontSize = 12.sp, color = TextSecondary)
-        Text(
-            valor.ifBlank { "—" },
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium,
-            color = TextPrimary
-        )
-    }
-}
