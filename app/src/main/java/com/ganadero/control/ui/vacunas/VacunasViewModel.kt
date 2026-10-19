@@ -3,7 +3,9 @@ package com.ganadero.control.ui.vacunas
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ganadero.control.model.Animal
-import com.ganadero.control.data.repository.GanaderoRepository
+import com.ganadero.control.data.repository.AnimalRepository
+import com.ganadero.control.data.repository.VacunaRepository
+import com.ganadero.control.domain.usecase.RegistrarVacunaUseCase
 import com.ganadero.control.model.Vacuna
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -33,16 +35,23 @@ sealed interface VacunasEvent {
     data class ShowSuccess(val message: String) : VacunasEvent
 }
 
+/**
+ * MVVM & HILT DI:
+ * Combina VacunaRepository y AnimalRepository (selector de animal);
+ * el alta se delega al caso de uso RegistrarVacunaUseCase.
+ */
 @HiltViewModel
 class VacunasViewModel @Inject constructor(
-    private val repository: GanaderoRepository
+    private val vacunaRepository: VacunaRepository,
+    private val animalRepository: AnimalRepository,
+    private val registrarVacuna: RegistrarVacunaUseCase
 ) : ViewModel() {
 
     private val porEliminar = MutableStateFlow<Vacuna?>(null)
 
     val uiState: StateFlow<VacunasUiState> = combine(
-        repository.vacunas,
-        repository.animales,
+        vacunaRepository.vacunas,
+        animalRepository.animales,
         porEliminar
     ) { vacunas, animales, aEliminar ->
         VacunasUiState.Success(vacunas, animales, aEliminar) as VacunasUiState
@@ -60,10 +69,10 @@ class VacunasViewModel @Inject constructor(
     fun addVacuna(v: Vacuna) {
         viewModelScope.launch {
             try {
-                repository.addVacuna(v)
+                registrarVacuna(v)
                 _uiEvent.emit(VacunasEvent.ShowSuccess("Vacuna registrada"))
             } catch (e: Exception) {
-                _uiEvent.emit(VacunasEvent.ShowToast("Error al registrar vacuna"))
+                _uiEvent.emit(VacunasEvent.ShowToast(e.message ?: "Error al registrar vacuna"))
             }
         }
     }
@@ -71,7 +80,7 @@ class VacunasViewModel @Inject constructor(
     fun updateVacuna(v: Vacuna) {
         viewModelScope.launch {
             try {
-                repository.updateVacuna(v)
+                vacunaRepository.updateVacuna(v)
                 _uiEvent.emit(VacunasEvent.ShowSuccess("Vacuna actualizada"))
             } catch (e: Exception) {
                 _uiEvent.emit(VacunasEvent.ShowToast("Error al actualizar vacuna"))
@@ -86,7 +95,7 @@ class VacunasViewModel @Inject constructor(
         val v = porEliminar.value ?: return
         viewModelScope.launch {
             try {
-                repository.deleteVacuna(v.id)
+                vacunaRepository.deleteVacuna(v.id)
                 porEliminar.value = null
                 _uiEvent.emit(VacunasEvent.ShowSuccess("Eliminado de forma exitosa"))
             } catch (e: Exception) {

@@ -8,7 +8,14 @@ import com.ganadero.control.data.local.ProduccionDao
 import com.ganadero.control.data.local.ProduccionEntity
 import com.ganadero.control.data.local.VacunaDao
 import com.ganadero.control.data.local.VacunaEntity
-import com.ganadero.control.data.repository.GanaderoRepositoryImpl
+import com.ganadero.control.data.repository.AnimalRepository
+import com.ganadero.control.data.repository.AnimalRepositoryImpl
+import com.ganadero.control.data.repository.FinanzaRepository
+import com.ganadero.control.data.repository.FinanzaRepositoryImpl
+import com.ganadero.control.data.repository.ProduccionRepository
+import com.ganadero.control.data.repository.ProduccionRepositoryImpl
+import com.ganadero.control.data.repository.VacunaRepository
+import com.ganadero.control.data.repository.VacunaRepositoryImpl
 import com.ganadero.control.model.Animal
 import com.ganadero.control.model.Finanza
 import com.ganadero.control.model.Produccion
@@ -126,22 +133,28 @@ class FakeFinanzaDao : FinanzaDao {
     override suspend fun count(): Int = store.value.size
 }
 
-class GanaderoRepositoryTest {
+/**
+ * Pruebas de los repositorios concretos (uno por entidad) sobre DAOs falsos.
+ * Verifica el mapeo entidad<->modelo y el comportamiento reactivo de los Flow.
+ */
+class RepositoriesTest {
 
-    private fun repository() = GanaderoRepositoryImpl(
-        animalDao = FakeAnimalDao(),
-        produccionDao = FakeProduccionDao(),
-        vacunaDao = FakeVacunaDao(),
-        finanzaDao = FakeFinanzaDao()
-    )
+    private class Deps {
+        val animalRepository: AnimalRepository = AnimalRepositoryImpl(FakeAnimalDao())
+        val produccionRepository: ProduccionRepository = ProduccionRepositoryImpl(FakeProduccionDao())
+        val vacunaRepository: VacunaRepository = VacunaRepositoryImpl(FakeVacunaDao())
+        val finanzaRepository: FinanzaRepository = FinanzaRepositoryImpl(FakeFinanzaDao())
+    }
+
+    private fun deps() = Deps()
 
     @Test
     fun `addAnimal inserta y el flujo emite el modelo de dominio mapeado`() = runTest {
-        val repo = repository()
+        val repos = deps()
 
-        repo.addAnimal(Animal(codigo = "A-010", nombre = "Mixa", raza = "Holstein"))
+        repos.animalRepository.addAnimal(Animal(codigo = "A-010", nombre = "Mixa", raza = "Holstein"))
 
-        val animales = repo.animales.first()
+        val animales = repos.animalRepository.animales.first()
         assertEquals(1, animales.size)
         assertEquals("A-010", animales[0].codigo)
         assertEquals("Mixa", animales[0].nombre)
@@ -151,48 +164,52 @@ class GanaderoRepositoryTest {
 
     @Test
     fun `getAnimal devuelve el animal por id y null si no existe`() = runTest {
-        val repo = repository()
-        repo.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
+        val repos = deps()
+        repos.animalRepository.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
 
-        val animal = repo.getAnimal(1).first()
+        val animal = repos.animalRepository.getAnimal(1).first()
         assertEquals("Luna", animal?.nombre)
-        assertNull(repo.getAnimal(99).first())
+        assertNull(repos.animalRepository.getAnimal(99).first())
     }
 
     @Test
     fun `updateAnimal modifica el registro existente`() = runTest {
-        val repo = repository()
-        repo.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
+        val repos = deps()
+        repos.animalRepository.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
 
-        repo.updateAnimal(Animal(id = 1, codigo = "A-001", nombre = "Luna", activo = false))
+        repos.animalRepository.updateAnimal(Animal(id = 1, codigo = "A-001", nombre = "Luna", activo = false))
 
-        val animal = repo.getAnimal(1).first()
+        val animal = repos.animalRepository.getAnimal(1).first()
         assertEquals("Luna", animal?.nombre)
         assertEquals(false, animal?.activo)
     }
 
     @Test
     fun `deleteAnimal elimina el animal del flujo`() = runTest {
-        val repo = repository()
-        repo.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
-        repo.addAnimal(Animal(codigo = "A-002", nombre = "Estrella"))
+        val repos = deps()
+        repos.animalRepository.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
+        repos.animalRepository.addAnimal(Animal(codigo = "A-002", nombre = "Estrella"))
 
-        repo.deleteAnimal(1)
+        repos.animalRepository.deleteAnimal(1)
 
-        val animales = repo.animales.first()
+        val animales = repos.animalRepository.animales.first()
         assertEquals(1, animales.size)
         assertEquals("A-002", animales[0].codigo)
     }
 
     @Test
     fun `addProduccion y addFinanza persisten y mapean correctamente`() = runTest {
-        val repo = repository()
-        repo.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
-        repo.addProduccion(Produccion(animalId = 1, fecha = "2026-10-17", turno = "Mañana", litros = 12.5))
-        repo.addFinanza(Finanza(fecha = "2026-10-17", tipo = "Gasto", categoria = "Alimento", monto = 1200.0))
+        val repos = deps()
+        repos.animalRepository.addAnimal(Animal(codigo = "A-001", nombre = "Luna"))
+        repos.produccionRepository.addProduccion(
+            Produccion(animalId = 1, fecha = "2026-10-17", turno = "Mañana", litros = 12.5)
+        )
+        repos.finanzaRepository.addFinanza(
+            Finanza(fecha = "2026-10-17", tipo = "Gasto", categoria = "Alimento", monto = 1200.0)
+        )
 
-        val producciones = repo.producciones.first()
-        val finanzas = repo.finanzas.first()
+        val producciones = repos.produccionRepository.producciones.first()
+        val finanzas = repos.finanzaRepository.finanzas.first()
 
         assertEquals(1, producciones.size)
         assertEquals(12.5, producciones[0].litros, 0.001)

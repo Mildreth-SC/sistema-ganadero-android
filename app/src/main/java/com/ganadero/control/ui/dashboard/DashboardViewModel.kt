@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ganadero.control.model.Animal
 import com.ganadero.control.model.Finanza
-import com.ganadero.control.data.repository.GanaderoRepository
+import com.ganadero.control.data.repository.AnimalRepository
+import com.ganadero.control.data.repository.FinanzaRepository
+import com.ganadero.control.data.repository.ProduccionRepository
+import com.ganadero.control.data.repository.VacunaRepository
 import com.ganadero.control.model.Produccion
 import com.ganadero.control.model.Vacuna
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,19 +35,22 @@ sealed interface DashboardUiState {
 
 /**
  * MVVM & HILT DI:
- * ViewModel inyectado mediante Hilt (@HiltViewModel y @Inject constructor).
- * Expone un único StateFlow<DashboardUiState> combinado desde el repositorio.
+ * Inyecta los cuatro repositorios (uno por entidad) y combina sus flujos
+ * en un único StateFlow<DashboardUiState>.
  */
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val repository: GanaderoRepository
+    private val animalRepository: AnimalRepository,
+    private val produccionRepository: ProduccionRepository,
+    private val vacunaRepository: VacunaRepository,
+    private val finanzaRepository: FinanzaRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<DashboardUiState> = combine(
-        repository.animales,
-        repository.producciones,
-        repository.vacunas,
-        repository.finanzas
+        animalRepository.animales,
+        produccionRepository.producciones,
+        vacunaRepository.vacunas,
+        finanzaRepository.finanzas
     ) { animales, producciones, vacunas, finanzas ->
         DashboardUiState.Success(animales, producciones, vacunas, finanzas) as DashboardUiState
     }.catch { e ->

@@ -24,6 +24,7 @@ El proyecto está construido con **Kotlin + Jetpack Compose** siguiendo el patr�
 | Persistencia | Room (SQLite) |
 | Inyección de dependencias | Hilt (Dagger) |
 | Navegación | Navigation Compose (con argumentos de ruta) |
+| Diseño adaptativo | `material3-window-size-class` (`WindowSizeClass`) |
 | Imágenes | Coil |
 | Reportes | `android.graphics.pdf.PdfDocument` (nativo, sin librerías extra) |
 | Pruebas | JUnit4 + kotlinx-coroutines-test |
@@ -36,11 +37,13 @@ El código está organizado por capas dentro de `app/src/main/java/com/ganadero/
 
 ```
 ├── GanaderoApplication.kt     # @HiltAndroidApp (punto de entrada de Hilt)
-├── MainActivity.kt            # @AndroidEntryPoint, Scaffold + NavigationBar + NavHost
+├── MainActivity.kt            # @AndroidEntryPoint, Scaffold + NavHost + navegación adaptativa (NavigationBar/NavigationRail)
 ├── model/                     # Modelos de dominio (Animal, Produccion, Vacuna, Finanza)
+├── domain/
+│   └── usecase/               # Casos de uso (validación de reglas de negocio, `operator fun invoke`)
 ├── data/
 │   ├── local/                 # Room: Entities, Daos, GanaderoDatabase (migraciones) y SeedData
-│   └── repository/            # GanaderoRepository (interfaz) + implementación
+│   └── repository/            # Un repositorio por entidad: Animal, Produccion, Vacuna y Finanza
 ├── di/                        # Módulos de Hilt (DatabaseModule, RepositoryModule)
 ├── ui/
 │   ├── dashboard/             # Pantalla de inicio + reporte PDF
@@ -54,8 +57,10 @@ El código está organizado por capas dentro de `app/src/main/java/com/ganadero/
 └── util/                      # Utilidades (cálculo de fechas, generador de PDF)
 ```
 
-**Flujo de dependencias:** `Composable → ViewModel → Repository → DAO (Room) → SQLite`.
+**Flujo de dependencias:** `Composable → ViewModel → UseCase (dominio) → Repository → DAO (Room) → SQLite`.
 Cada ViewModel expone un `UiState` sellado mediante `StateFlow`, recolectado en la UI con `collectAsStateWithLifecycle()`. El detalle de animal recibe su `animalId` por la ruta y lo lee desde `SavedStateHandle`.
+
+**Diseño adaptativo:** la actividad calcula el `WindowSizeClass`; en pantallas compactas (teléfono) se usa `NavigationBar` inferior y en medianas/expandidas (plegable, tablet) un `NavigationRail` lateral, reorganizando el layout en lugar de solo estirarlo.
 
 ## Base de datos
 
@@ -119,9 +124,9 @@ Pruebas unitarias de la lógica de datos y del ViewModel de animales:
 
 Proyecto académico del curso de **Aplicaciones Móviles**.
 
-- Franklin Molina
-- Mildreth Guanoluisa
-- Yuyin Lan
+- GUANOLUISA MOREIRA MILDRETH XIOMARA
+- MOLINA PONCE FRANKLIN VICENTE
+- MOLINA PONCE MELANI ANAHI
 
 ## Documentación adicional
 

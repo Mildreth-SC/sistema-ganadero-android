@@ -3,7 +3,9 @@ package com.ganadero.control.ui.produccion
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ganadero.control.model.Animal
-import com.ganadero.control.data.repository.GanaderoRepository
+import com.ganadero.control.data.repository.AnimalRepository
+import com.ganadero.control.data.repository.ProduccionRepository
+import com.ganadero.control.domain.usecase.RegistrarProduccionUseCase
 import com.ganadero.control.model.Produccion
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -33,16 +35,23 @@ sealed interface ProduccionEvent {
     data class ShowSuccess(val message: String) : ProduccionEvent
 }
 
+/**
+ * MVVM & HILT DI:
+ * Combina ProduccionRepository y AnimalRepository (para el selector de animal);
+ * el alta se delega al caso de uso RegistrarProduccionUseCase.
+ */
 @HiltViewModel
 class ProduccionViewModel @Inject constructor(
-    private val repository: GanaderoRepository
+    private val produccionRepository: ProduccionRepository,
+    private val animalRepository: AnimalRepository,
+    private val registrarProduccion: RegistrarProduccionUseCase
 ) : ViewModel() {
 
     private val porEliminar = MutableStateFlow<Produccion?>(null)
 
     val uiState: StateFlow<ProduccionUiState> = combine(
-        repository.producciones,
-        repository.animales,
+        produccionRepository.producciones,
+        animalRepository.animales,
         porEliminar
     ) { producciones, animales, aEliminar ->
         ProduccionUiState.Success(producciones, animales, aEliminar) as ProduccionUiState
@@ -60,10 +69,10 @@ class ProduccionViewModel @Inject constructor(
     fun addProduccion(p: Produccion) {
         viewModelScope.launch {
             try {
-                repository.addProduccion(p)
+                registrarProduccion(p)
                 _uiEvent.emit(ProduccionEvent.ShowSuccess("Producción registrada"))
             } catch (e: Exception) {
-                _uiEvent.emit(ProduccionEvent.ShowToast("Error al registrar producción"))
+                _uiEvent.emit(ProduccionEvent.ShowToast(e.message ?: "Error al registrar producción"))
             }
         }
     }
@@ -71,7 +80,7 @@ class ProduccionViewModel @Inject constructor(
     fun updateProduccion(p: Produccion) {
         viewModelScope.launch {
             try {
-                repository.updateProduccion(p)
+                produccionRepository.updateProduccion(p)
                 _uiEvent.emit(ProduccionEvent.ShowSuccess("Registro actualizado"))
             } catch (e: Exception) {
                 _uiEvent.emit(ProduccionEvent.ShowToast("Error al actualizar registro"))
@@ -86,7 +95,7 @@ class ProduccionViewModel @Inject constructor(
         val p = porEliminar.value ?: return
         viewModelScope.launch {
             try {
-                repository.deleteProduccion(p.id)
+                produccionRepository.deleteProduccion(p.id)
                 porEliminar.value = null
                 _uiEvent.emit(ProduccionEvent.ShowSuccess("Eliminado de forma exitosa"))
             } catch (e: Exception) {

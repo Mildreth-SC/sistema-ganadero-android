@@ -3,7 +3,8 @@ package com.ganadero.control.ui.finanzas
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ganadero.control.model.Finanza
-import com.ganadero.control.data.repository.GanaderoRepository
+import com.ganadero.control.data.repository.FinanzaRepository
+import com.ganadero.control.domain.usecase.RegistrarFinanzaUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,15 +32,20 @@ sealed interface FinanzasEvent {
     data class ShowSuccess(val message: String) : FinanzasEvent
 }
 
+/**
+ * MVVM & HILT DI:
+ * Lecturas desde FinanzaRepository; el alta se delega al caso de uso RegistrarFinanzaUseCase.
+ */
 @HiltViewModel
 class FinanzasViewModel @Inject constructor(
-    private val repository: GanaderoRepository
+    private val finanzaRepository: FinanzaRepository,
+    private val registrarFinanza: RegistrarFinanzaUseCase
 ) : ViewModel() {
 
     private val porEliminar = MutableStateFlow<Finanza?>(null)
 
     val uiState: StateFlow<FinanzasUiState> = combine(
-        repository.finanzas,
+        finanzaRepository.finanzas,
         porEliminar
     ) { finanzas, aEliminar ->
         FinanzasUiState.Success(finanzas, aEliminar) as FinanzasUiState
@@ -57,10 +63,10 @@ class FinanzasViewModel @Inject constructor(
     fun addFinanza(f: Finanza) {
         viewModelScope.launch {
             try {
-                repository.addFinanza(f)
+                registrarFinanza(f)
                 _uiEvent.emit(FinanzasEvent.ShowSuccess("Movimiento registrado"))
             } catch (e: Exception) {
-                _uiEvent.emit(FinanzasEvent.ShowToast("Error al registrar movimiento"))
+                _uiEvent.emit(FinanzasEvent.ShowToast(e.message ?: "Error al registrar movimiento"))
             }
         }
     }
@@ -68,7 +74,7 @@ class FinanzasViewModel @Inject constructor(
     fun updateFinanza(f: Finanza) {
         viewModelScope.launch {
             try {
-                repository.updateFinanza(f)
+                finanzaRepository.updateFinanza(f)
                 _uiEvent.emit(FinanzasEvent.ShowSuccess("Movimiento actualizado"))
             } catch (e: Exception) {
                 _uiEvent.emit(FinanzasEvent.ShowToast("Error al actualizar movimiento"))
@@ -83,7 +89,7 @@ class FinanzasViewModel @Inject constructor(
         val f = porEliminar.value ?: return
         viewModelScope.launch {
             try {
-                repository.deleteFinanza(f.id)
+                finanzaRepository.deleteFinanza(f.id)
                 porEliminar.value = null
                 _uiEvent.emit(FinanzasEvent.ShowSuccess("Eliminado de forma exitosa"))
             } catch (e: Exception) {

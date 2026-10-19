@@ -3,7 +3,9 @@ package com.ganadero.control.ui.animales
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ganadero.control.model.Animal
-import com.ganadero.control.data.repository.GanaderoRepository
+import com.ganadero.control.data.repository.AnimalRepository
+import com.ganadero.control.domain.usecase.ActualizarAnimalUseCase
+import com.ganadero.control.domain.usecase.RegistrarAnimalUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,16 +44,19 @@ sealed interface AnimalesEvent {
 /**
  * MVVM & HILT DI:
  * ViewModel inyectado mediante Hilt (@HiltViewModel y @Inject constructor).
+ * Lecturas desde AnimalRepository; escrituras delegadas a casos de uso de la capa de dominio.
  */
 @HiltViewModel
 class AnimalesViewModel @Inject constructor(
-    private val repository: GanaderoRepository
+    private val animalRepository: AnimalRepository,
+    private val registrarAnimal: RegistrarAnimalUseCase,
+    private val actualizarAnimal: ActualizarAnimalUseCase
 ) : ViewModel() {
 
     private val animalPorEliminar = MutableStateFlow<Animal?>(null)
 
     val uiState: StateFlow<AnimalesUiState> = combine(
-        repository.animales,
+        animalRepository.animales,
         animalPorEliminar
     ) { animales, porEliminar ->
         AnimalesUiState.Success(animales, porEliminar) as AnimalesUiState
@@ -69,10 +74,10 @@ class AnimalesViewModel @Inject constructor(
     fun addAnimal(a: Animal) {
         viewModelScope.launch {
             try {
-                repository.addAnimal(a)
+                registrarAnimal(a)
                 _uiEvent.emit(AnimalesEvent.ShowSuccess("Animal registrado exitosamente"))
             } catch (e: Exception) {
-                _uiEvent.emit(AnimalesEvent.ShowToast("Error al agregar animal"))
+                _uiEvent.emit(AnimalesEvent.ShowToast(e.message ?: "Error al agregar animal"))
             }
         }
     }
@@ -80,10 +85,10 @@ class AnimalesViewModel @Inject constructor(
     fun updateAnimal(a: Animal) {
         viewModelScope.launch {
             try {
-                repository.updateAnimal(a)
+                actualizarAnimal(a)
                 _uiEvent.emit(AnimalesEvent.ShowSuccess("Animal actualizado"))
             } catch (e: Exception) {
-                _uiEvent.emit(AnimalesEvent.ShowToast("Error al actualizar animal"))
+                _uiEvent.emit(AnimalesEvent.ShowToast(e.message ?: "Error al actualizar animal"))
             }
         }
     }
@@ -100,7 +105,7 @@ class AnimalesViewModel @Inject constructor(
         animalPorEliminar.value?.let { animal ->
             viewModelScope.launch {
                 try {
-                    repository.deleteAnimal(animal.id)
+                    animalRepository.deleteAnimal(animal.id)
                     animalPorEliminar.value = null
                     _uiEvent.emit(AnimalesEvent.ShowSuccess("Eliminado de forma exitosa"))
                 } catch (e: Exception) {

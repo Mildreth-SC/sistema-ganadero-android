@@ -19,8 +19,10 @@ La capa de datos sigue los principios de arquitectura limpia de Android, separan
 com.ganadero.control
 ├── data
 │   ├── local          → Entities, DAOs y Database (Room)
-│   └── repository     → Interfaz e implementación del Repositorio
+│   └── repository     → Un repositorio por entidad (Animal, Produccion, Vacuna, Finanza)
 ├── model              → Modelos de dominio (Animal, Produccion, Vacuna, Finanza)
+├── domain
+│   └── usecase        → Casos de uso (validación de reglas de negocio)
 ├── di                 → Módulos Hilt (DatabaseModule, RepositoryModule)
 └── ui                 → Pantallas (View) y ViewModels (MVVM)
 ```
@@ -49,9 +51,13 @@ Clase singleton `RoomDatabase` (versión 4) que gestiona las conexiones y migrac
 
 ### G. Mapeadores y Repositorio
 - **Mappers** (`data/local/Entities.kt`): funciones de extensión `toDomain()` / `toEntity()` que transforman entidades de Room a modelos de dominio y viceversa.
-- **Repositorio** (`data/repository/GanaderoRepository.kt`):
-  - `GanaderoRepository` (interfaz): define los contratos de acceso a datos.
-  - `GanaderoRepositoryImpl` (implementación): recibe los DAOs por inyección de dependencias y ejecuta las operaciones, aplicando los mappers.
+- **Repositorios** (`data/repository/`): un repositorio por entidad, cada uno con su interfaz e implementación (SRP):
+  - `AnimalRepository` / `AnimalRepositoryImpl` (usa `AnimalDao`).
+  - `ProduccionRepository` / `ProduccionRepositoryImpl` (usa `ProduccionDao`).
+  - `VacunaRepository` / `VacunaRepositoryImpl` (usa `VacunaDao`).
+  - `FinanzaRepository` / `FinanzaRepositoryImpl` (usa `FinanzaDao`).
+  - Cada implementación recibe su DAO por inyección de dependencias y aplica los mappers.
+- **Casos de uso** (`domain/usecase/`): validan las reglas de negocio antes de persistir (`RegistrarAnimalUseCase`, `ActualizarAnimalUseCase`, `RegistrarProduccionUseCase`, `RegistrarVacunaUseCase`, `RegistrarFinanzaUseCase`), invocables con `operator fun invoke`.
 
 ---
 
@@ -59,13 +65,13 @@ Clase singleton `RoomDatabase` (versión 4) que gestiona las conexiones y migrac
 
 Los componentes se proveen mediante módulos Hilt:
 - **`di/DatabaseModule.kt`**: provee la instancia de `GanaderoDatabase` y los cuatro DAOs.
-- **`di/RepositoryModule.kt`**: enlaza `GanaderoRepository` con `GanaderoRepositoryImpl`.
+- **`di/RepositoryModule.kt`**: enlaza (`@Binds`) cada interfaz con su implementación: `AnimalRepository`, `ProduccionRepository`, `VacunaRepository` y `FinanzaRepository`.
 
-Los ViewModels (`@HiltViewModel`) reciben el repositorio inyectado automáticamente.
+Los ViewModels (`@HiltViewModel`) reciben los repositorios y los casos de uso inyectados automáticamente.
 
 ---
 
 ## 3. Instrucciones para Integrantes del Equipo
 
 1. **Sincronización con Gradle**: Sincroniza el proyecto en Android Studio tras clonar o actualizar para que KSP genere los stubs de Room y Hilt.
-2. **Uso en UI**: Los ViewModels consumen los datos a través de `GanaderoRepository`, garantizando persistencia local automática tras reiniciar la app. La UI nunca accede directamente a los DAOs.
+2. **Uso en UI**: Los ViewModels consumen los datos a través de los repositorios y validan las altas con los casos de uso, garantizando persistencia local automática tras reiniciar la app. La UI nunca accede directamente a los DAOs.

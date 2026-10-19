@@ -4,7 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachMoney
@@ -17,16 +20,24 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.WindowSizeClass
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -44,11 +55,15 @@ import dagger.hilt.android.AndroidEntryPoint
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            // DISEÑO ADAPTATIVO: se calcula el WindowSizeClass de la ventana actual.
+            val windowSizeClass = calculateWindowSizeClass(this)
             GanaderoTheme {
-                AppRoot()
+                AppRoot(windowSizeClass = windowSizeClass)
             }
         }
     }
@@ -57,13 +72,15 @@ class MainActivity : ComponentActivity() {
 private data class TabItem(val label: String, val icon: ImageVector, val screen: Screen)
 
 /**
- * NAVEGACIÓN Y ESTRUCTURA DE LA APLICACIÓN:
- * Contenedor raíz que integra NavController, la barra de navegación inferior (NavigationBar)
- * y el grafo de navegación (GanaderoNavGraph).
+ * NAVEGACIÓN Y ESTRUCTURA DE LA APLICACIÓN (DISEÑO ADAPTATIVO):
+ * Contenedor raíz que integra NavController, el grafo de navegación (GanaderoNavGraph)
+ * y la navegación principal. Según el WindowSizeClass se reorganiza el layout:
+ *  - Compact (teléfono): NavigationBar inferior.
+ *  - Medium/Expanded (plegable, tablet, escritorio): NavigationRail lateral.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppRoot() {
+fun AppRoot(windowSizeClass: WindowSizeClass) {
     // NAVEGACIÓN: Inicialización del NavController
     val navController = rememberNavController()
 
@@ -83,35 +100,41 @@ fun AppRoot() {
         currentRoute != null && currentRoute.startsWith(tab.screen.route.split("/")[0])
     } ?: tabs.first()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(currentTab.label, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Orange,
-                    titleContentColor = Color.White
-                )
+    fun isSelected(route: String): Boolean =
+        currentRoute != null && currentRoute.startsWith(route.split("/")[0])
+
+    val onNavigate: (Screen) -> Unit = { screen ->
+        navController.navigate(screen.route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    val topBar: @Composable () -> Unit = {
+        TopAppBar(
+            title = { Text(currentTab.label, fontWeight = FontWeight.Bold) },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Orange,
+                titleContentColor = Color.White
             )
-        },
-        bottomBar = {
-            NavigationBar(containerColor = Color.White) {
+        )
+    }
+
+    // DISEÑO ADAPTATIVO: se reorganiza el layout según el ancho de ventana.
+    val isExpanded = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
+
+    if (isExpanded) {
+        Row(Modifier.fillMaxSize()) {
+            NavigationRail(containerColor = Color.White) {
+                Spacer(Modifier.height(12.dp))
                 tabs.forEach { tabItem ->
-                    val isSelected = currentRoute != null && currentRoute.startsWith(tabItem.screen.route.split("/")[0])
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = {
-                            // NAVEGACIÓN: Transición entre pantallas con gestión de pila (saveState, restoreState)
-                            navController.navigate(tabItem.screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
+                    NavigationRailItem(
+                        selected = isSelected(tabItem.screen.route),
+                        onClick = { onNavigate(tabItem.screen) },
                         icon = { Icon(tabItem.icon, contentDescription = tabItem.label) },
                         label = { Text(tabItem.label) },
-                        colors = NavigationBarItemDefaults.colors(
+                        colors = NavigationRailItemDefaults.colors(
                             selectedIconColor = Orange,
                             selectedTextColor = Orange,
                             indicatorColor = OrangePale
@@ -119,11 +142,37 @@ fun AppRoot() {
                     )
                 }
             }
+            Scaffold(modifier = Modifier.weight(1f), topBar = topBar) { padding ->
+                Box(Modifier.padding(padding).fillMaxSize()) {
+                    GanaderoNavGraph(navController = navController)
+                }
+            }
         }
-    ) { padding ->
-        Box(Modifier.padding(padding).fillMaxSize()) {
-            // NAVEGACIÓN: Hosting del grafo de navegación con NavHost
-            GanaderoNavGraph(navController = navController)
+    } else {
+        Scaffold(
+            topBar = topBar,
+            bottomBar = {
+                NavigationBar(containerColor = Color.White) {
+                    tabs.forEach { tabItem ->
+                        NavigationBarItem(
+                            selected = isSelected(tabItem.screen.route),
+                            onClick = { onNavigate(tabItem.screen) },
+                            icon = { Icon(tabItem.icon, contentDescription = tabItem.label) },
+                            label = { Text(tabItem.label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = Orange,
+                                selectedTextColor = Orange,
+                                indicatorColor = OrangePale
+                            )
+                        )
+                    }
+                }
+            }
+        ) { padding ->
+            Box(Modifier.padding(padding).fillMaxSize()) {
+                // NAVEGACIÓN: Hosting del grafo de navegación con NavHost
+                GanaderoNavGraph(navController = navController)
+            }
         }
     }
 }

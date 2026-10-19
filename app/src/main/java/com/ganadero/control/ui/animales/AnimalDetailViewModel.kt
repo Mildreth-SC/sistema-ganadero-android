@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ganadero.control.model.Animal
-import com.ganadero.control.data.repository.GanaderoRepository
+import com.ganadero.control.data.repository.AnimalRepository
+import com.ganadero.control.data.repository.ProduccionRepository
+import com.ganadero.control.domain.usecase.ActualizarAnimalUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -45,18 +47,21 @@ sealed interface AnimalDetailEvent {
  * Obtiene el argumento `animalId` directamente desde el SavedStateHandle que
  * Hilt inyecta a partir de los argumentos de la ruta de navegacion
  * (animal_detail/{animalId}). No depende de parametros de la UI.
+ * Combina dos repositorios (Animal + Producción) y usa un caso de uso para actualizar.
  */
 @HiltViewModel
 class AnimalDetailViewModel @Inject constructor(
-    private val repository: GanaderoRepository,
+    private val animalRepository: AnimalRepository,
+    private val produccionRepository: ProduccionRepository,
+    private val actualizarAnimal: ActualizarAnimalUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     val animalId: Int = savedStateHandle.get<Int>("animalId") ?: 0
 
     val uiState: StateFlow<AnimalDetailUiState> = combine(
-        repository.getAnimal(animalId),
-        repository.getProduccionesByAnimal(animalId)
+        animalRepository.getAnimal(animalId),
+        produccionRepository.getProduccionesByAnimal(animalId)
     ) { animal, producciones ->
         if (animal == null) AnimalDetailUiState.NotFound
         else AnimalDetailUiState.Success(animal, producciones)
@@ -74,10 +79,10 @@ class AnimalDetailViewModel @Inject constructor(
     fun updateAnimal(a: Animal) {
         viewModelScope.launch {
             try {
-                repository.updateAnimal(a)
+                actualizarAnimal(a)
                 _uiEvent.emit(AnimalDetailEvent.ShowSuccess("Animal actualizado"))
             } catch (e: Exception) {
-                _uiEvent.emit(AnimalDetailEvent.ShowToast("Error al actualizar animal"))
+                _uiEvent.emit(AnimalDetailEvent.ShowToast(e.message ?: "Error al actualizar animal"))
             }
         }
     }
@@ -85,7 +90,7 @@ class AnimalDetailViewModel @Inject constructor(
     fun deleteAnimal(a: Animal) {
         viewModelScope.launch {
             try {
-                repository.deleteAnimal(a.id)
+                animalRepository.deleteAnimal(a.id)
                 _uiEvent.emit(AnimalDetailEvent.ShowSuccess("Eliminado de forma exitosa"))
             } catch (e: Exception) {
                 _uiEvent.emit(AnimalDetailEvent.ShowToast("Error al eliminar animal"))
