@@ -27,7 +27,7 @@ com.ganadero.control
 
 ### C. Entidades (`@Entity`) — `data/local/Entities.kt`
 Representan las tablas en SQLite:
-1. **`AnimalEntity`** (`animales`): Almacena información de identificación, raza, sexo, peso, genealogía y estado reproductivo de cada animal.
+1. **`AnimalEntity`** (`animales`): Almacena información de identificación, raza, sexo, peso, genealogía, estado reproductivo, número de partos (`partos`) y el motivo del estado (`motivoEstado`: En crecimiento / Pendiente de venta / Vendido).
 2. **`ProduccionEntity`** (`producciones`): Registra la producción lechera vinculada a un animal (`animalId`), fecha, turno y litros.
 3. **`VacunaEntity`** (`vacunas`): Registra el historial de vacunación, tipo de vacuna y fechas de aplicación/próxima dosis.
 4. **`FinanzaEntity`** (`finanzas`): Control de ingresos y gastos de la finca (categoría, monto, fecha, descripción).
@@ -42,7 +42,7 @@ Interfaces de acceso a datos que definen las consultas SQL:
 Retornan `Flow<T>` para observación reactiva y `suspend fun` para operaciones de escritura.
 
 ### E. Base de Datos (`GanaderoDatabase`) — `data/local/GanaderoDatabase.kt`
-Clase singleton `RoomDatabase` (versión 3) que gestiona las conexiones y migraciones de la base de datos local `ganadero_database`. Registra `MIGRATION_1_2` y `MIGRATION_2_3` y crea datos de ejemplo (seed) en la primera ejecución.
+Clase singleton `RoomDatabase` (versión 4) que gestiona las conexiones y migraciones de la base de datos local `ganadero_database`. Registra `MIGRATION_1_2`, `MIGRATION_2_3` y `MIGRATION_3_4` (columnas `partos` y `motivoEstado`) y crea datos de ejemplo (seed) en la primera ejecución.
 
 ### F. Modelos de Dominio — `model/Models.kt`
 `Animal`, `Produccion`, `Vacuna` y `Finanza`: modelos limpios que consume la UI, desacoplados de las entidades de Room.

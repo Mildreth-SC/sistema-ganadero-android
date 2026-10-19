@@ -161,18 +161,33 @@ private fun AnimalesContent(
                         color = TextSecondary
                     )
                 } else {
+                    val activos = animales.filter { it.activo }
+                    val inactivos = animales.filter { !it.activo }
                     LazyColumn(
                         Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(animales, key = { it.id }) { a ->
+                        items(activos, key = { it.id }) { a ->
                             AnimalCard(
                                 a = a,
                                 onClick = { onAnimalClick(a.id) },
                                 onEdit = { onEdit(a) },
                                 onDelete = { onDelete(a) }
                             )
+                        }
+                        if (inactivos.isNotEmpty()) {
+                            item(key = "seccion-inactivos") {
+                                SeccionTitulo("Animales inactivos (${inactivos.size})")
+                            }
+                            items(inactivos, key = { it.id }) { a ->
+                                AnimalCard(
+                                    a = a,
+                                    onClick = { onAnimalClick(a.id) },
+                                    onEdit = { onEdit(a) },
+                                    onDelete = { onDelete(a) }
+                                )
+                            }
                         }
                     }
                 }
@@ -243,7 +258,7 @@ private fun AnimalCard(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                EstadoBadge(a.activo)
+                EstadoBadge(a.activo, a.motivoEstado)
                 Box(
                     Modifier
                         .size(35.dp)
@@ -281,7 +296,19 @@ private fun AnimalCard(
 }
 
 @Composable
-internal fun EstadoBadge(activo: Boolean) {
+private fun SeccionTitulo(texto: String) {
+    Text(
+        texto,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 15.sp,
+        color = TextSecondary,
+        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+    )
+}
+
+@Composable
+internal fun EstadoBadge(activo: Boolean, motivo: String = "") {
+    val etiqueta = if (activo) "Activo" else motivo.ifBlank { "Inactivo" }
     Box(
         Modifier
             .clip(RoundedCornerShape(6.dp))
@@ -289,7 +316,7 @@ internal fun EstadoBadge(activo: Boolean) {
             .padding(horizontal = 8.dp, vertical = 2.dp)
     ) {
         Text(
-            if (activo) "Activo" else "Inactivo",
+            etiqueta,
             fontSize = 10.sp,
             color = if (activo) ActivoText else InactivoText
         )
@@ -334,6 +361,9 @@ internal fun AnimalDialog(
     var madre by remember { mutableStateOf(animal?.madreNombre ?: "") }
     var activo by remember { mutableStateOf(animal?.activo ?: true) }
     var estadoRepro by remember { mutableStateOf(animal?.estadoReproductivo ?: "Ideal") }
+    var fechaNacimiento by remember { mutableStateOf(animal?.fechaNacimiento ?: "") }
+    var partos by remember { mutableStateOf(animal?.partos?.toString() ?: "0") }
+    var motivo by remember { mutableStateOf(animal?.motivoEstado ?: "") }
 
     val selectorFoto = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -396,6 +426,8 @@ internal fun AnimalDialog(
                             CampoForm("Nombre", nombre, "Nombre") { nombre = it }
                             CampoForm("Raza", raza, "Raza") { raza = it }
                             CampoForm("Peso", peso, "Peso (kg)", KeyboardType.Decimal) { peso = it }
+                            CampoForm("Fecha de nacimiento", fechaNacimiento, "AAAA-MM-DD") { fechaNacimiento = it }
+                            CampoForm("Partos", partos, "N.º de partos", KeyboardType.Number) { partos = it }
 
                             Etiqueta("Sexo")
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -414,6 +446,14 @@ internal fun AnimalDialog(
                                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     PillBtn("Activo", activo) { activo = true }
                                     PillBtn("Inactivo", !activo) { activo = false }
+                                }
+                                if (!activo) {
+                                    Etiqueta("Motivo del estado")
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        PillBtn("En crecimiento", motivo == "En crecimiento") { motivo = "En crecimiento" }
+                                        PillBtn("Pendiente", motivo == "Pendiente de venta") { motivo = "Pendiente de venta" }
+                                        PillBtn("Vendido", motivo == "Vendido") { motivo = "Vendido" }
+                                    }
                                 }
                             }
 
@@ -452,6 +492,7 @@ internal fun AnimalDialog(
                         onClick = {
                             if (codigo.isNotBlank()) {
                                 val pesoNum = peso.toDoubleOrNull() ?: animal?.pesoActual ?: 0.0
+                                val partosNum = partos.toIntOrNull() ?: 0
                                 onSave(
                                     animal?.copy(
                                         codigo = codigo.trim(),
@@ -460,11 +501,14 @@ internal fun AnimalDialog(
                                         pesoActual = pesoNum,
                                         tipo = tipo,
                                         sexo = sexo,
+                                        fechaNacimiento = fechaNacimiento.trim(),
                                         madreNombre = madre.trim(),
                                         padreNombre = padre.trim(),
                                         fotoUri = foto,
                                         activo = activo,
-                                        estadoReproductivo = estadoRepro
+                                        estadoReproductivo = estadoRepro,
+                                        partos = partosNum,
+                                        motivoEstado = if (activo) "" else motivo
                                     ) ?: Animal(
                                         codigo = codigo.trim(),
                                         nombre = nombre.trim(),
@@ -472,11 +516,14 @@ internal fun AnimalDialog(
                                         pesoActual = pesoNum,
                                         tipo = tipo,
                                         sexo = sexo,
+                                        fechaNacimiento = fechaNacimiento.trim(),
                                         madreNombre = madre.trim(),
                                         padreNombre = padre.trim(),
                                         fotoUri = foto,
                                         activo = true,
-                                        estadoReproductivo = estadoRepro
+                                        estadoReproductivo = estadoRepro,
+                                        partos = partosNum,
+                                        motivoEstado = ""
                                     )
                                 )
                             }

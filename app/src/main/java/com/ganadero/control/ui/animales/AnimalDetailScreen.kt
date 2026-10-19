@@ -54,6 +54,7 @@ import com.ganadero.control.ui.theme.Orange
 import com.ganadero.control.ui.theme.Success
 import com.ganadero.control.ui.theme.TextPrimary
 import com.ganadero.control.ui.theme.TextSecondary
+import com.ganadero.control.util.Fechas
 
 @Composable
 fun AnimalDetailScreen(
@@ -201,7 +202,7 @@ private fun AnimalDetalleContent(
                         color = TextPrimary
                     )
                     Spacer(Modifier.height(6.dp))
-                    EstadoBadge(animal.activo)
+                    EstadoBadge(animal.activo, animal.motivoEstado)
                     Spacer(Modifier.height(6.dp))
                     EstadoReproBadge(animal.estadoReproductivo)
                 }
@@ -214,7 +215,11 @@ private fun AnimalDetalleContent(
             DatoFila("Sexo", animal.sexo)
             DatoFila("Peso actual", "${animal.pesoActual} kg")
             DatoFila("Fecha de nacimiento", animal.fechaNacimiento.ifBlank { "—" })
+            DatoFila("Edad", Fechas.calcularEdad(animal.fechaNacimiento))
             DatoFila("Estado", if (animal.activo) "Activo" else "Inactivo")
+            if (!animal.activo && animal.motivoEstado.isNotBlank()) {
+                DatoFila("Motivo del estado", animal.motivoEstado)
+            }
         }
 
         DetalleSeccion("Genealogía") {
@@ -222,6 +227,11 @@ private fun AnimalDetalleContent(
             DatoFila("Raza del padre", animal.padreRaza.ifBlank { "—" })
             DatoFila("Madre", animal.madreNombre.ifBlank { "—" })
             DatoFila("Raza de la madre", animal.madreRaza.ifBlank { "—" })
+        }
+
+        DetalleSeccion("Reproducción") {
+            DatoFila("Partos", if (animal.partos > 0) animal.partos.toString() else "No aplica")
+            DatoFila("Partos por año", Fechas.partosPorAnio(animal.partos, animal.fechaNacimiento))
         }
 
         if (animal.tipo == "Leche") {

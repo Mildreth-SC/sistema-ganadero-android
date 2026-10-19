@@ -65,6 +65,10 @@ class FakeProduccionDao : ProduccionDao {
         return id.toLong()
     }
 
+    override suspend fun insertProducciones(producciones: List<ProduccionEntity>) {
+        producciones.forEach { insertProduccion(it) }
+    }
+
     override suspend fun deleteProduccionById(id: Int) {
         store.update { list -> list.filterNot { it.id == id } }
     }

@@ -6,25 +6,22 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.ganadero.control.model.Animal
-import com.ganadero.control.model.Finanza
-import com.ganadero.control.model.Produccion
-import com.ganadero.control.model.Vacuna
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.Calendar
 
 /**
  * PERSISTENCIA LOCAL Y ÚNICA FUENTE DE VERDAD (ROOM / SQLITE):
  * Configuración central de la base de datos Room.
- * - Versión 2 con MIGRATION_1_2 (FKs + índices de integridad referencial y unificación
- *   del estado del animal en el campo `activo`).
+ * - Versión 4 con migraciones incrementales:
+ *   MIGRATION_1_2 (FKs + índices y unificación del estado en `activo`),
+ *   MIGRATION_2_3 (columna `estadoReproductivo`),
+ *   MIGRATION_3_4 (columnas `partos` y `motivoEstado`).
  * - exportSchema = true: los esquemas se exportan a app/schemas/ para diseñar migraciones futuras.
  */
 @Database(
     entities = [AnimalEntity::class, ProduccionEntity::class, VacunaEntity::class, FinanzaEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class GanaderoDatabase : RoomDatabase() {
@@ -133,6 +130,23 @@ abstract class GanaderoDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Migración 3 → 4:
+         * Se agregan las columnas `partos` (número de partos, 0 = no aplica) y
+         * `motivoEstado` (razón del estado: En crecimiento / Pendiente de venta / Vendido).
+         * SQLite (API 24) soporta ADD COLUMN cuando la columna tiene valor por defecto.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `animales` ADD COLUMN `partos` INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL(
+                    "ALTER TABLE `animales` ADD COLUMN `motivoEstado` TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
+
         @Volatile
         private var INSTANCE: GanaderoDatabase? = null
 
@@ -143,7 +157,7 @@ abstract class GanaderoDatabase : RoomDatabase() {
                     GanaderoDatabase::class.java,
                     "ganadero_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .addCallback(GanaderoDatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
@@ -175,43 +189,7 @@ abstract class GanaderoDatabase : RoomDatabase() {
             vacunaDao: VacunaDao,
             finanzaDao: FinanzaDao
         ) {
-            val today = todayStr()
-            val lunaId = animalDao.insertAnimal(
-                Animal(codigo = "A-001", nombre = "Luna", tipo = "Leche", raza = "Holstein", sexo = "Hembra", pesoActual = 480.0).toEntity()
-            ).toInt()
-            val estrellaId = animalDao.insertAnimal(
-                Animal(codigo = "A-002", nombre = "Estrella", tipo = "Leche", raza = "Jersey", sexo = "Hembra", pesoActual = 450.0).toEntity()
-            ).toInt()
-            animalDao.insertAnimal(
-                Animal(codigo = "A-003", nombre = "Tormenta", tipo = "Carne", raza = "Brahman", sexo = "Macho", pesoActual = 720.0).toEntity()
-            )
-
-            produccionDao.insertProduccion(
-                Produccion(animalId = lunaId, fecha = today, turno = "Mañana", litros = 12.5).toEntity()
-            )
-            produccionDao.insertProduccion(
-                Produccion(animalId = estrellaId, fecha = today, turno = "Tarde", litros = 10.0).toEntity()
-            )
-
-            vacunaDao.insertVacuna(
-                Vacuna(animalId = lunaId, tipo = "Fiebre aftosa", fechaAplicacion = today, proximaFecha = today).toEntity()
-            )
-
-            finanzaDao.insertFinanza(
-                Finanza(fecha = today, tipo = "Ingreso", categoria = "Venta de leche", monto = 350000.0, descripcion = "Venta semanal").toEntity()
-            )
-            finanzaDao.insertFinanza(
-                Finanza(fecha = today, tipo = "Gasto", categoria = "Alimento", monto = 120000.0, descripcion = "Concentrado").toEntity()
-            )
-        }
-
-        private fun todayStr(): String {
-            val c = Calendar.getInstance()
-            return "%04d-%02d-%02d".format(
-                c.get(Calendar.YEAR),
-                c.get(Calendar.MONTH) + 1,
-                c.get(Calendar.DAY_OF_MONTH)
-            )
+            SeedData.poblar(animalDao, produccionDao, vacunaDao, finanzaDao)
         }
     }
 }

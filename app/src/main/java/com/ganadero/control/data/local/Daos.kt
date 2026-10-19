@@ -82,6 +82,9 @@ interface ProduccionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduccion(produccion: ProduccionEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProducciones(producciones: List<ProduccionEntity>)
+
     @Query("DELETE FROM producciones WHERE id = :id")
     suspend fun deleteProduccionById(id: Int)
 
